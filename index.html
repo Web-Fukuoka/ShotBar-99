@@ -916,6 +916,8 @@ function shotCard(s, kicker, reason, pct){
   r.append(el("h3",null,s.name));
   if(typeof pct==="number"){ const m=el("div","match"); m.append(el("span",null,"あなたとの相性"), el("b",null,Math.min(99,pct)+"%")); const bar=el("i"); bar.style.setProperty("--w",Math.min(99,pct)+"%"); m.append(bar); r.append(m); }
   if(reason){ const dl=el("dl"); dl.append(el("dt",null,"おすすめの理由"), el("dd",null,reason)); r.append(dl); }
+  else if(str(s.description,200)){ const dl=el("dl"); dl.append(el("dt",null,"どんなお酒？"), el("dd",null,str(s.description,200)+"。")); r.append(dl); }
+  if(typeof s.abv==="number" && s.abv>=60) r.append(el("div","notice","とても度数が高いお酒です。少しずつ、お水といっしょにどうぞ。"));
   const sp=el("div","specs");
   const specs=[["種類",s.category]];
   if(typeof s.abv==="number") specs.push(["度数",fmtAbv(s.abv)]);
