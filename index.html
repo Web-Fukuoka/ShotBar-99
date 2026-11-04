@@ -405,6 +405,8 @@ const CONFIG = {
 /* =====================================================================
    ショットメニュー（11月15日以降、正式メニューに差し替え）
    name      商品名
+   short     ルーレットに表示する短い名前（長い商品名のとき）
+   recommend false にするとショット診断では推薦しない（ルーレットには入る）
    category  種類（テキーラ、リキュールなど）
    price     価格（円）。未定は null
    abv       アルコール度数（%）。未定は null
@@ -417,14 +419,36 @@ const CONFIG = {
    demo      開発用の仮データなら true
    ===================================================================== */
 const MENU = [
-  { id:"tequila", demo:false, name:"テキーラ", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
-    description:"ライムと塩で楽しむ、キリッとした定番のショット", flavors:["sour","clean"], moods:["party","new","adult"] },
-  { id:"kleiner", demo:false, name:"クライナー", category:"リキュール", price:null, abv:null, image:null, available:true, weight:1,
-    description:"小さなボトルで乾杯できる、甘くてフルーティーなリキュール", flavors:["sweet","fruity"], moods:["party","sweet"] },
-  { id:"cocalero", demo:false, name:"コカレロ", category:"リキュール", price:null, abv:null, image:null, available:true, weight:1,
-    description:"ハーブの爽やかな香りとほのかな苦みがある、個性派リキュール", flavors:["clean","bitter"], moods:["new","refresh","adult"] },
-  { id:"cocabomb", demo:false, name:"コカボム", category:"ショットカクテル", price:null, abv:null, image:null, available:true, weight:1,
-    description:"コカレロをエナジードリンクと合わせた、甘くて飲みやすい一杯", flavors:["sweet","clean"], moods:["party","sweet"] },
+  { id:"cuervo-margarita", name:"クエルボ マルガリータ", short:"マルガリータ", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
+    description:"ライムの甘酸っぱさが広がる、マルガリータ味のテキーラ", flavors:["sour", "sweet", "fruity"], moods:["party", "sweet", "refresh"] },
+  { id:"cuervo-gold", name:"クエルボ ゴールド", short:"クエルボ ゴールド", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
+    description:"まろやかでほんのり甘い、定番のゴールドテキーラ", flavors:["sweet", "clean"], moods:["party"] },
+  { id:"cuervo-silver", name:"クエルボ シルバー", short:"クエルボ シルバー", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
+    description:"クリアでキレのある、ライムと相性のいいシルバーテキーラ", flavors:["clean", "sour"], moods:["party", "refresh"] },
+  { id:"sauza-gold", name:"サウザ ゴールド", short:"サウザ ゴールド", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
+    description:"やわらかい甘みのある、飲みやすいゴールドテキーラ", flavors:["sweet", "clean"], moods:["party"] },
+  { id:"sauza-silver", name:"サウザ シルバー", short:"サウザ シルバー", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
+    description:"すっきり軽やかな、シャープな後味のシルバーテキーラ", flavors:["clean", "sour"], moods:["party", "refresh"] },
+  { id:"1800-reposado", name:"1800 レポサド", short:"1800 レポサド", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
+    description:"樽で寝かせた、バニラのような香りとなめらかさ", flavors:["sweet", "bitter"], moods:["adult"] },
+  { id:"tres-anejo", name:"トレスジェネレーション アネホ", short:"トレス アネホ", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
+    description:"長く熟成させた、カラメルと樽の深い香り", flavors:["bitter", "sweet"], moods:["adult", "new"] },
+  { id:"double-h", name:"Double H", short:"Double H", category:"ショット", price:null, abv:null, image:null, available:true, weight:1,
+    description:null, flavors:[], moods:["new"] },
+  { id:"absinthe", name:"アブサン", short:"アブサン", category:"リキュール", price:null, abv:null, image:null, available:true, weight:1,
+    description:"ハーブとアニスの香りが強い、個性派のお酒", flavors:["bitter"], moods:["new", "adult"] },
+  { id:"dover-spirits", name:"ドーバースピリッツ", short:"ドーバースピリッツ", category:"スピリッツ", price:null, abv:null, image:null, available:true, weight:1,
+    description:null, flavors:[], moods:[] },
+  { id:"spirytus", name:"スピリタス", short:"スピリタス", category:"ウォッカ", price:null, abv:null, image:null, available:true, weight:1, recommend:false,
+    description:"世界でもトップクラスに度数の高いウォッカ", flavors:[], moods:[] },
+  { id:"chamisul", name:"チャミスル", short:"チャミスル", category:"焼酎（韓国）", price:null, abv:null, image:null, available:true, weight:1,
+    description:"すっきり飲みやすい、韓国の定番焼酎", flavors:["clean", "sweet"], moods:["refresh", "party"] },
+  { id:"kleiner", name:"クライナー", short:"クライナー", category:"リキュール", price:null, abv:null, image:null, available:true, weight:1,
+    description:"小さなボトルで乾杯できる、甘くてフルーティーなリキュール", flavors:["sweet", "fruity"], moods:["party", "sweet"] },
+  { id:"cocabomb", name:"コカボム", short:"コカボム", category:"ショットカクテル", price:null, abv:null, image:null, available:true, weight:1,
+    description:"コカレロをエナジードリンクと合わせた、甘くて飲みやすい一杯", flavors:["sweet", "clean"], moods:["party", "sweet"] },
+  { id:"suratto", name:"すらっと", short:"すらっと", category:"ショット", price:null, abv:null, image:null, available:true, weight:1,
+    description:null, flavors:[], moods:[] },
 ];
 
 /* ===================================================================== */
@@ -827,7 +851,7 @@ const SHOT_STEPS=[
 ];
 
 function rankShots(mood, flavor){
-  return availableShots().map(s=>{
+  return availableShots().filter(s=>s.recommend!==false).map(s=>{
     let sc=rand()*0.9;
     const mHit = mood!=="any" && Array.isArray(s.moods) && s.moods.includes(mood);
     const fHit = flavor!=="any" && Array.isArray(s.flavors) && s.flavors.includes(flavor);
@@ -850,7 +874,7 @@ async function startShot(){
   const {mood, flavor} = await chatFlow(chat, SHOT_STEPS);
   const list=availableShots();
   const [ai] = await Promise.all([
-    list.length ? askAI("shot",{mood,flavor,menu:list.map(s=>({id:s.id,name:s.name,category:s.category,description:s.description,flavors:s.flavors}))}) : null,
+    list.length ? askAI("shot",{mood,flavor,menu:list.filter(s=>s.recommend!==false).map(s=>({id:s.id,name:s.name,category:s.category,description:s.description,flavors:s.flavors}))}) : null,
     botSay(chat,"ありがとうございます。メニューの中から選んでみますね…",1300)
   ]);
   shotRank=rankShots(mood,flavor).map(x=>({...x, reason:shotReason(x,mood,flavor)}));
@@ -909,7 +933,9 @@ function renderShot(){
    ===================================================================== */
 let wheelRot=0, wheelItems=[];
 const SVGNS="http://www.w3.org/2000/svg";
-const SEG_FILLS=["#1d170f","#2a2114"];
+const SEG_FILLS=["#1d170f","#2a2114","#3a2c18","#14100a"];
+const SEG_TEXT=["#f1d796","#f1e8d6","#f1d796","#f1e8d6"];
+const SEG_DOT=["#ff4fa0","#4fe3ff","#f1d796","#4fe3ff"];
 function renderRoulette(){
   const body=$("#rouletteBody"); body.replaceChildren();
   wheelItems=availableShots();
@@ -926,8 +952,10 @@ function renderRoulette(){
   const outer=document.createElementNS(SVGNS,"circle"); outer.setAttribute("r","106"); outer.setAttribute("fill","#0c0a07"); outer.setAttribute("stroke","#d4ad62"); outer.setAttribute("stroke-width","3");
   svg.append(outer);
   const pt=(deg,r)=>{ const rad=(deg-90)*Math.PI/180; return [r*Math.cos(rad), r*Math.sin(rad)]; };
-  const fs = n<=6?11:n<=10?9:n<=16?7:5.5;
-  const maxChars = n<=6?9:n<=10?8:n<=16?7:5;
+  const fs = n<=6?11:n<=8?9:n<=12?7.2:n<=18?6.4:5.2;
+  const maxChars = n<=6?9:n<=8?8:11;
+  // 隣同士と、最後と最初が同じ色にならない色数を選ぶ
+  const k = n%2===0 ? 2 : [3,4].find(c=>n%c!==1) || 3;
   wheelItems.forEach((s,i)=>{
     const g=document.createElementNS(SVGNS,"g");
     if(n===1){
@@ -936,21 +964,21 @@ function renderRoulette(){
       const [x1,y1]=pt(i*a,100), [x2,y2]=pt((i+1)*a,100);
       const p=document.createElementNS(SVGNS,"path");
       p.setAttribute("d",`M0 0L${x1.toFixed(2)} ${y1.toFixed(2)}A100 100 0 ${a>180?1:0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}Z`);
-      p.setAttribute("fill", SEG_FILLS[i%2]); p.setAttribute("stroke","#8d6d34"); p.setAttribute("stroke-width","0.8");
+      p.setAttribute("fill", SEG_FILLS[i%k]); p.setAttribute("stroke","#8d6d34"); p.setAttribute("stroke-width","0.8");
       g.append(p);
     }
     const mid=(i+0.5)*a;
     const t=document.createElementNS(SVGNS,"text");
-    const label = s.name.replace(/^サンプル・/,"").replace(/（.*?）/g,"");
+    const label = s.short || s.name;
     t.textContent = label.length>maxChars ? label.slice(0,maxChars-1)+"…" : label;
     t.setAttribute("x","0"); t.setAttribute("y","-62"); t.setAttribute("text-anchor","middle"); t.setAttribute("dominant-baseline","middle");
-    t.setAttribute("fill", i%2 ? "#f1e8d6" : "#f1d796"); t.setAttribute("font-size",String(fs)); t.setAttribute("font-weight","700");
+    t.setAttribute("fill", SEG_TEXT[i%k]); t.setAttribute("font-size",String(fs)); t.setAttribute("font-weight","700");
     t.setAttribute("font-family","Zen Kaku Gothic New, sans-serif");
     t.setAttribute("transform",`rotate(${mid})`);
-    if(n>8){ t.setAttribute("y","-58"); t.setAttribute("transform",`rotate(${mid}) rotate(-90 0 -58)`); }
+    if(n>8){ t.setAttribute("y","-64"); t.setAttribute("transform",`rotate(${mid}) rotate(${mid>180?90:-90} 0 -64)`); }  // 左半分は文字が逆さにならないよう反転
     g.append(t);
     // 外周のネオン点
-    const [dx,dy]=pt(i*a,103); const dot=document.createElementNS(SVGNS,"circle"); dot.setAttribute("cx",dx.toFixed(2)); dot.setAttribute("cy",dy.toFixed(2)); dot.setAttribute("r","2.2"); dot.setAttribute("fill", i%2?"#4fe3ff":"#ff4fa0");
+    const [dx,dy]=pt(i*a,103); const dot=document.createElementNS(SVGNS,"circle"); dot.setAttribute("cx",dx.toFixed(2)); dot.setAttribute("cy",dy.toFixed(2)); dot.setAttribute("r","2.2"); dot.setAttribute("fill", SEG_DOT[i%k]);
     g.append(dot);
     svg.append(g);
   });
