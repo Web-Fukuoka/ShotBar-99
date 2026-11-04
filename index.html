@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ShotBar99 AI Bartender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,700;1,6..96,500&family=Big+Shoulders+Display:wght@600;800;900&family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: one narrow column (bar counter), each feature is a full "screen" swapped in place; actions sit low for one-hand use. */
+:root{
+  color-scheme: dark;
+  --ink:#0c0a07;          /* back bar black, warm */
+  --ink-2:#16120c;        /* raised surface */
+  --ink-3:#221b12;        /* chip / input */
+  --line:#3a2f1f;         /* hairline */
+  --gold:#d4ad62;         /* brass */
+  --gold-hi:#f1d796;
+  --gold-lo:#8d6d34;
+  --ivory:#f1e8d6;
+  --mute:#a99a7f;
+  --neon-k:#ff4fa0;       /* karaoke neon */
+  --neon-s:#4fe3ff;       /* shot neon */
+  --warn:#ffb35c;
+  --f-logo:"Bodoni Moda","Didot","Times New Roman",serif;
+  --f-jp-head:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --f-num:"Big Shoulders Display","Oswald","Arial Narrow",sans-serif;
+  --r:14px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{
+  margin:0;background:var(--ink);color:var(--ivory);
+  font-family:var(--f-body);font-size:16px;line-height:1.7;
+  -webkit-tap-highlight-color:transparent;
+  background-image:
+    radial-gradient(120% 60% at 50% -10%, rgba(212,173,98,.16), transparent 60%),
+    radial-gradient(80% 40% at 100% 100%, rgba(255,79,160,.06), transparent 70%);
+  background-attachment:fixed;
+}
+.wrap{
+  max-width:560px;margin:0 auto;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:12px 40px;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--gold-hi);outline-offset:3px}
+button[disabled]{cursor:not-allowed;opacity:.45}
+
+/* top bar */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px}
+.back{
+  display:inline-flex;align-items:center;gap:6px;
+  background:none;border:1px solid var(--line);border-radius:999px;
+  padding:8px 16px 8px 12px;font-size:14px;color:var(--ivory);min-height:44px;
+}
+.back svg{width:16px;height:16px}
+.minilogo{font-family:var(--f-logo);font-style:italic;font-size:18px;color:var(--gold);letter-spacing:.02em;margin-left:auto}
+
+.demo-banner{
+  margin:6px 0 4px;padding:10px 14px;border:1px dashed var(--warn);border-radius:10px;
+  color:var(--warn);font-size:13px;line-height:1.55;background:rgba(255,179,92,.06)
+}
+.demo-banner b{font-weight:700}
+
+/* home */
+.hero{text-align:center;padding:28px 0 22px}
+.logo{margin:0;font-family:var(--f-logo);font-weight:500;line-height:.9;color:var(--ivory)}
+.logo .name{display:block;font-size:clamp(50px,16vw,96px);font-style:italic;letter-spacing:-.01em;white-space:nowrap}
+.logo .name em{font-style:italic;color:var(--gold);font-weight:700}
+.sub{margin:10px 0 0;font-size:11px;letter-spacing:.42em;color:var(--mute);padding-left:.42em}
+.copy{margin:22px 0 0;font-family:var(--f-jp-head);font-size:clamp(19px,5.4vw,24px);font-weight:600;line-height:1.6;text-wrap:balance}
+.rule{display:flex;align-items:center;gap:10px;justify-content:center;margin-top:18px;color:var(--gold-lo)}
+.rule::before,.rule::after{content:"";height:1px;width:56px;background:currentColor}
+.rule span{width:6px;height:6px;transform:rotate(45deg);background:var(--gold)}
+
+.cards{display:grid;gap:18px;margin-top:18px}
+.card{
+  position:relative;border-radius:20px;padding:22px 18px 18px;background:var(--ink-2);
+  border:1px solid var(--line);overflow:hidden;
+}
+.card::before{
+  content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(90% 70% at 100% 0%, var(--glow), transparent 60%);opacity:.22;
+}
+.card.k{--glow:var(--neon-k);--hue:var(--neon-k)}
+.card.s{--glow:var(--neon-s);--hue:var(--neon-s)}
+.card-head{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.card h2{margin:0;font-family:var(--f-num);font-weight:900;font-size:clamp(34px,10vw,44px);line-height:1;letter-spacing:.02em;white-space:nowrap}
+.card .tag{white-space:nowrap}
+.card h2 span{color:var(--hue);text-shadow:0 0 18px var(--hue)}
+.card .tag{font-size:12px;color:var(--mute);letter-spacing:.12em}
+.card p.lead{position:relative;margin:8px 0 16px;color:var(--mute);font-size:14px}
+.feat{position:relative;display:grid;gap:10px}
+.feat button{
+  display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+  background:var(--ink-3);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px 14px;min-height:68px;transition:border-color .2s, transform .15s;
+}
+.feat button:hover{border-color:var(--hue)}
+.feat button:active{transform:scale(.985)}
+.feat .ico{flex:0 0 42px;height:42px;border-radius:12px;display:grid;place-items:center;border:1px solid var(--hue);color:var(--hue)}
+.feat .ico svg{width:22px;height:22px}
+.feat .t{display:block;font-weight:700;font-size:16px;line-height:1.35}
+.feat .d{display:block;font-size:12.5px;color:var(--mute);line-height:1.45;margin-top:2px}
+.feat .arr{margin-left:auto;color:var(--gold);flex:0 0 auto}
+
+.foot{margin-top:28px;text-align:center;font-size:12px;color:var(--mute);line-height:1.8}
+
+/* screens */
+.screen-title{margin:12px 0 4px}
+.eyebrow{font-family:var(--f-num);font-weight:800;letter-spacing:.18em;font-size:14px;color:var(--hue,var(--gold))}
+.screen-title h1{margin:2px 0 0;font-family:var(--f-jp-head);font-weight:800;font-size:clamp(26px,7vw,32px);line-height:1.3;text-wrap:balance}
+.screen-title p{margin:6px 0 0;color:var(--mute);font-size:14px}
+[data-view].k{--hue:var(--neon-k)}
+[data-view].s{--hue:var(--neon-s)}
+
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  min-height:60px;border-radius:999px;border:0;font-weight:700;font-size:18px;letter-spacing:.08em;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,var(--gold-lo));color:#1a1206;
+  box-shadow:0 6px 24px rgba(212,173,98,.25), inset 0 1px 0 rgba(255,255,255,.5);
+  transition:transform .12s, filter .2s;
+}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:none;color:var(--ivory);border:1px solid var(--line);box-shadow:none;font-weight:500;font-size:15px;min-height:52px;letter-spacing:.04em}
+.actions{display:grid;gap:10px;margin-top:22px}
+
+/* score */
+.scorebox{
+  position:relative;margin-top:18px;border-radius:24px;border:1px solid var(--line);background:var(--ink-2);
+  padding:24px 16px 20px;text-align:center;overflow:hidden;
+}
+.scorebox::after{content:"";position:absolute;inset:auto 0 0;height:50%;background:linear-gradient(0deg,rgba(255,79,160,.08),transparent);pointer-events:none}
+.score-label{font-size:13px;letter-spacing:.3em;color:var(--mute);padding-left:.3em}
+.score-num{
+  font-family:var(--f-num);font-weight:900;line-height:.9;font-variant-numeric:tabular-nums;
+  font-size:clamp(132px,46vw,200px);color:var(--ivory);margin:8px 0 0;
+  text-shadow:0 0 28px rgba(255,79,160,.35);
+}
+.score-num small{font-size:.26em;color:var(--gold);margin-left:.08em;letter-spacing:.04em}
+.score-num.idle{color:var(--line);text-shadow:none}
+.score-num.rolling{color:var(--neon-k);text-shadow:0 0 22px var(--neon-k)}
+.score-num.hit{animation:hit .7s cubic-bezier(.2,1.6,.4,1)}
+@keyframes hit{0%{transform:scale(.6);filter:brightness(2.2)}60%{transform:scale(1.08)}100%{transform:scale(1);filter:none}}
+.score-tier{min-height:28px;margin-top:6px;font-weight:700;letter-spacing:.1em;color:var(--gold)}
+.range-note{margin-top:4px;font-size:13px;color:var(--mute)}
+details.settings{margin-top:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--ink-2)}
+details.settings summary{list-style:none;padding:14px 16px;font-size:14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+details.settings summary::-webkit-details-marker{display:none}
+details.settings summary::after{content:"＋";color:var(--gold)}
+details.settings[open] summary::after{content:"－"}
+.set-body{padding:0 16px 16px;display:grid;gap:12px}
+.set-row{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
+.set-row label{display:grid;gap:4px;font-size:12px;color:var(--mute)}
+.set-row input{
+  width:100%;min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--ink-3);color:var(--ivory);
+  font-family:var(--f-num);font-size:26px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums
+}
+.set-row .tilde{padding-bottom:10px;color:var(--mute)}
+.set-msg{font-size:13px;color:var(--warn);min-height:1em}
+.set-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.set-btns button{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--ink-3);font-size:14px}
+.set-btns button.primary{border-color:var(--gold);color:var(--gold-hi)}
+
+/* quiz */
+.step{margin-top:20px}
+.step-h{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.step-h .n{font-family:var(--f-num);font-weight:800;color:var(--hue);font-size:15px;letter-spacing:.1em}
+.step-h h2{margin:0;font-size:17px;font-weight:700}
+.chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.chips.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.chip{
+  min-height:54px;padding:10px 10px;border-radius:12px;border:1px solid var(--line);background:var(--ink-2);
+  font-size:14.5px;line-height:1.35;text-align:center;transition:border-color .15s, background .15s;
+}
+.chip[aria-pressed="true"]{border-color:var(--hue);background:color-mix(in srgb, var(--hue) 14%, var(--ink-2));color:#fff;box-shadow:0 0 0 1px var(--hue) inset}
+.chip.wide{grid-column:1/-1}
+
+/* chat with the bartender */
+.chat{display:grid;gap:12px;margin-top:18px}
+.msg{display:flex;gap:10px;align-items:flex-end;animation:rise .35s ease-out}
+.msg.me{justify-content:flex-end}
+.avatar{
+  flex:0 0 40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 35% 30%,#2b2215,var(--ink));border:1.5px solid var(--gold);
+  font-family:var(--f-logo);font-style:italic;font-weight:700;color:var(--gold);font-size:17px
+}
+.bubble{max-width:min(80%,420px);padding:11px 15px;border-radius:18px;font-size:15px;line-height:1.6;min-width:0}
+.msg.bot .bubble{background:var(--ivory);color:#1d160c;border-bottom-left-radius:6px}
+.msg.me .bubble{background:color-mix(in srgb, var(--hue) 22%, var(--ink-3));border:1px solid color-mix(in srgb, var(--hue) 55%, transparent);border-bottom-right-radius:6px}
+.who-name{display:block;font-size:11px;letter-spacing:.14em;color:var(--gold-lo);margin-bottom:2px}
+.typing{display:flex;gap:5px;padding:6px 2px}
+.typing i{width:7px;height:7px;border-radius:50%;background:#7a6a50;animation:dot 1s infinite ease-in-out}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+.chips.in-chat{margin-left:50px;animation:rise .35s ease-out}
+.restart{display:block;margin:16px auto 0;background:none;border:0;color:var(--mute);font-size:13px;text-decoration:underline;text-underline-offset:3px;min-height:44px}
+
+.loading{display:grid;place-items:center;gap:14px;padding:48px 0;color:var(--mute);font-size:14px}
+.dots{display:flex;gap:8px}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--hue);animation:dot 1s infinite ease-in-out}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-6px)}}
+
+.result{margin-top:18px;border-radius:22px;border:1px solid var(--hue);background:var(--ink-2);padding:22px 18px;box-shadow:0 0 40px -12px var(--hue);animation:rise .5s ease-out}
+@keyframes rise{from{opacity:.0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.result .kicker{font-size:12px;letter-spacing:.24em;color:var(--hue)}
+.result h3{margin:6px 0 0;font-family:var(--f-jp-head);font-weight:800;font-size:clamp(26px,7.4vw,34px);line-height:1.3;text-wrap:balance}
+.result .badge{display:inline-block;margin-top:8px;padding:2px 10px;border:1px dashed var(--warn);border-radius:999px;color:var(--warn);font-size:12px}
+.result dl{margin:16px 0 0;display:grid;gap:14px}
+.result dt{font-size:12px;letter-spacing:.16em;color:var(--gold)}
+.result dd{margin:2px 0 0;font-size:15px}
+.specs{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.specs span{padding:4px 12px;border-radius:999px;background:var(--ink-3);border:1px solid var(--line);font-size:13px;color:var(--mute)}
+.specs b{color:var(--ivory);font-weight:500;font-variant-numeric:tabular-nums}
+.songs{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.songs-h{font-size:12px;letter-spacing:.16em;color:var(--gold)}
+.songs ol{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px;counter-reset:s}
+.songs li{counter-increment:s;display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:8px;padding:10px 12px;border-radius:12px;background:var(--ink-3);border:1px solid var(--line)}
+.songs li::before{content:counter(s);grid-row:1/3;align-self:center;font-family:var(--f-num);font-weight:900;font-size:24px;color:var(--hue);text-align:center}
+.songs .st{font-weight:700;font-size:16px;line-height:1.4;overflow-wrap:anywhere}
+.songs .sa{font-size:12.5px;color:var(--mute);line-height:1.4}
+.songs .more{margin-top:10px;width:100%;min-height:44px;border-radius:999px;border:1px solid var(--hue);background:none;color:var(--ivory);font-size:14px}
+.alt{margin-top:14px;font-size:13px;color:var(--mute)}
+.note{margin-top:14px;font-size:12px;color:var(--mute);text-align:center}
+.notice{margin-top:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--warn);color:var(--warn);font-size:14px;background:rgba(255,179,92,.06)}
+
+/* roulette */
+.wheel-stage{position:relative;margin:22px auto 0;width:min(100%,400px);aspect-ratio:1;max-width:100%}
+.wheel-stage::before{
+  content:"";position:absolute;inset:-4%;border-radius:50%;
+  background:conic-gradient(from 0deg,var(--neon-s),var(--neon-k),var(--gold-hi),var(--neon-s));
+  filter:blur(18px);opacity:.35;transition:opacity .4s
+}
+.wheel-stage.lit::before{opacity:.9;animation:glow 1.2s ease-in-out 2}
+@keyframes glow{50%{opacity:.4}}
+#wheel{position:relative;display:block;width:100%;height:100%;border-radius:50%;
+  transition:transform 4.6s cubic-bezier(.12,.62,.08,1);will-change:transform}
+.pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:34px;height:44px;z-index:2;filter:drop-shadow(0 0 8px var(--gold-hi))}
+.hub{
+  position:absolute;left:50%;top:50%;width:26%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;z-index:2;
+  background:radial-gradient(circle at 35% 30%,#2b2215,var(--ink));border:2px solid var(--gold);
+  display:grid;place-items:center;font-family:var(--f-logo);font-style:italic;font-weight:700;color:var(--gold);font-size:clamp(26px,9vw,40px)
+}
+.empty{margin-top:24px;padding:28px 18px;border:1px dashed var(--line);border-radius:18px;text-align:center;color:var(--mute)}
+.empty b{display:block;color:var(--ivory);font-size:17px;margin-bottom:4px}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (min-width:760px){
+  .wrap{max-width:640px}
+  .cards{grid-template-columns:1fr 1fr;align-items:start}
+  .wrap.home{max-width:960px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app">
+  <div class="bar" id="topbar" hidden>
+    <button class="back" id="backBtn" type="button" aria-label="トップに戻る">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      トップ
+    </button>
+    <span class="minilogo">ShotBar99</span>
+  </div>
+
+  <!-- HOME -->
+  <section data-view="home">
+    <header class="hero">
+      <h1 class="logo"><span class="name">ShotBar<em>99</em></span></h1>
+      <p class="sub">AI BARTENDER</p>
+      <p class="copy">今夜の一曲も、一杯も。<br>AIにおまかせ。</p>
+      <div class="rule" aria-hidden="true"><span></span></div>
+    </header>
+
+    <div class="cards">
+      <article class="card k">
+        <div class="card-head"><h2>KARAOKE <span>AI</span></h2><span class="tag">何を歌う？</span></div>
+        <p class="lead">点数で勝負するか、気分で選ぶか。</p>
+        <div class="feat">
+          <button type="button" data-go="score">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span>
+            <span><span class="t">点数チャレンジ</span><span class="d">目標点数をランダムで決定</span></span>
+            <span class="arr" aria-hidden="true">›</span>
+          </button>
+          <button type="button" data-go="song">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></span>
+            <span><span class="t">AI選曲アドバイザー</span><span class="d">今の気分から歌うジャンルを提案</span></span>
+            <span class="arr" aria-hidden="true">›</span>
+          </button>
+        </div>
+      </article>
+
+      <article class="card s">
+        <div class="card-head"><h2>SHOT <span>AI</span></h2><span class="tag">何を飲む？</span></div>
+        <p class="lead">好みで選ぶか、運にまかせるか。</p>
+        <div class="feat">
+          <button type="button" data-go="shot">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12l-1.6 15.2a1 1 0 01-1 .8H8.6a1 1 0 01-1-.8z"/><path d="M6.7 10h10.6"/></svg></span>
+            <span><span class="t">AIショット診断</span><span class="d">気分と味の好みからおすすめ</span></span>
+            <span class="arr" aria-hidden="true">›</span>
+          </button>
+          <button type="button" data-go="roulette">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/></svg></span>
+            <span><span class="t">ショットルーレット</span><span class="d">メニューから1杯を抽選</span></span>
+            <span class="arr" aria-hidden="true">›</span>
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <p class="foot">お酒は無理せず、お水といっしょにお楽しみください。<br>20歳未満の方の飲酒は法律で禁止されています。</p>
+  </section>
+
+  <!-- SCORE CHALLENGE -->
+  <section data-view="score" class="k" hidden>
+    <div class="screen-title">
+      <div class="eyebrow">KARAOKE AI</div>
+      <h1>点数チャレンジ</h1>
+      <p>この点数を超えたらクリア。カラオケの採点で挑戦しよう。</p>
+    </div>
+    <div class="scorebox">
+      <div class="score-label">TARGET SCORE</div>
+      <div class="score-num idle" id="scoreNum" aria-live="polite"><span id="scoreVal">--</span><small>点</small></div>
+      <div class="score-tier" id="scoreTier"></div>
+      <div class="range-note" id="rangeNote"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" id="scoreBtn">抽選する</button>
+    </div>
+    <details class="settings" id="scoreSettings">
+      <summary>抽選する点数の範囲を変える</summary>
+      <div class="set-body">
+        <div class="set-row">
+          <label for="minScore">最低点<input id="minScore" type="number" inputmode="numeric" min="0" max="100" step="1"></label>
+          <span class="tilde">〜</span>
+          <label for="maxScore">最高点<input id="maxScore" type="number" inputmode="numeric" min="0" max="100" step="1"></label>
+        </div>
+        <div class="set-msg" id="setMsg" role="status"></div>
+        <div class="set-btns">
+          <button type="button" id="resetRange">初期設定に戻す</button>
+          <button type="button" class="primary" id="saveRange">この範囲にする</button>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- SONG ADVISOR -->
+  <section data-view="song" class="k" hidden>
+    <div class="screen-title">
+      <div class="eyebrow">KARAOKE AI</div>
+      <h1>AI選曲アドバイザー</h1>
+      <p>今の気分を選ぶと、歌うジャンルと楽しみ方を提案します。</p>
+    </div>
+    <div class="chat" id="songChat" aria-live="polite"></div>
+    <div id="songOut"></div>
+  </section>
+
+  <!-- SHOT QUIZ -->
+  <section data-view="shot" class="s" hidden>
+    <div class="screen-title">
+      <div class="eyebrow">SHOT AI</div>
+      <h1>AIショット診断</h1>
+      <p>気分と味の好みから、今夜の1杯を選びます。</p>
+    </div>
+    <div class="chat" id="shotChat" aria-live="polite"></div>
+    <div id="shotOut"></div>
+  </section>
+
+  <!-- ROULETTE -->
+  <section data-view="roulette" class="s" hidden>
+    <div class="screen-title">
+      <div class="eyebrow">SHOT AI</div>
+      <h1>ショットルーレット</h1>
+      <p>STARTを押すと、メニューから1杯を抽選します。</p>
+    </div>
+    <div id="rouletteBody"></div>
+  </section>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   設定（ここだけ触れば運用できます）
+   ===================================================================== */
+const CONFIG = {
+  // "demo" … 開発用の仮メニューで動作（画面に「仮」と表示）
+  // "live" … 正式メニューのみ表示。demo:true の商品は自動で除外
+  menuMode: "live",
+  scoreRange: { min: 70, max: 95 },     // 点数チャレンジの初期範囲
+  // OpenAI API を使うときに、自分のサーバーのURLを入れる（例 "/api/ai"）
+  // null のあいだは、AIなしの提案ロジックで動きます。APIキーはページに書かないこと。
+  aiEndpoint: null,
+  aiTimeoutMs: 8000,
+};
+
+/* =====================================================================
+   ショットメニュー（11月15日以降、正式メニューに差し替え）
+   name      商品名
+   category  種類（テキーラ、リキュールなど）
+   price     価格（円）。未定は null
+   abv       アルコール度数（%）。未定は null
+   description  味の説明（診断の推薦理由に使われます）
+   flavors   味の特徴：sweet 甘め / fruity フルーティー / sour 酸味 / bitter 苦味 / clean スッキリ
+   moods     合う気分：party 盛り上がり / sweet 甘いもの / refresh スッキリ / new 挑戦 / adult 大人
+   image     画像URL（なければ null）
+   available 提供中なら true、在庫切れ・販売停止なら false
+   weight    ルーレットの当たりやすさ（基本は 1。将来の確率調整用）
+   demo      開発用の仮データなら true
+   ===================================================================== */
+const MENU = [
+  { id:"tequila", demo:false, name:"テキーラ", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
+    description:"ライムと塩で楽しむ、キリッとした定番のショット", flavors:["sour","clean"], moods:["party","new","adult"] },
+  { id:"kleiner", demo:false, name:"クライナー", category:"リキュール", price:null, abv:null, image:null, available:true, weight:1,
+    description:"小さなボトルで乾杯できる、甘くてフルーティーなリキュール", flavors:["sweet","fruity"], moods:["party","sweet"] },
+  { id:"cocalero", demo:false, name:"コカレロ", category:"リキュール", price:null, abv:null, image:null, available:true, weight:1,
+    description:"ハーブの爽やかな香りとほのかな苦みがある、個性派リキュール", flavors:["clean","bitter"], moods:["new","refresh","adult"] },
+  { id:"cocabomb", demo:false, name:"コカボム", category:"ショットカクテル", price:null, abv:null, image:null, available:true, weight:1,
+    description:"コカレロをエナジードリンクと合わせた、甘くて飲みやすい一杯", flavors:["sweet","clean"], moods:["party","sweet"] },
+];
+
+/* ===================================================================== */
+const $ = (s, el=document) => el.querySelector(s);
+const el = (tag, cls, text) => { const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n; };
+const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem("sb99:"+k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem("sb99:"+k, JSON.stringify(v)); }catch(e){} }
+};
+// 偏りのない乱数（0 <= r < 1）
+function rand(){
+  try{ const a=new Uint32Array(1); crypto.getRandomValues(a); return a[0]/4294967296; }catch(e){ return Math.random(); }
+}
+function randInt(min,max){ return min + Math.floor(rand()*(max-min+1)); }
+function weightedPick(items){
+  const total = items.reduce((s,i)=>s+(i.weight>0?i.weight:0),0);
+  let r = rand()*total;
+  for(let i=0;i<items.length;i++){ r -= (items[i].weight>0?items[i].weight:0); if(r<0) return i; }
+  return items.length-1;
+}
+
+/* ---------- メニュー ---------- */
+const isDemo = CONFIG.menuMode !== "live";
+function availableShots(){
+  return MENU.filter(m => m && m.available === true && typeof m.name==="string" && m.name.trim() && (isDemo || !m.demo));
+}
+const fmtPrice = p => (typeof p==="number" && p>=0) ? "¥"+p.toLocaleString("ja-JP") : "未定";
+const fmtAbv = a => (typeof a==="number" && a>=0) ? a+"%" : "未定";
+
+/* ---------- 画面切り替え（URLの#で戻るボタンにも対応） ---------- */
+const VIEWS = ["home","score","song","shot","roulette"];
+let busy = false;           // アニメーション中は画面遷移をロック
+function show(view){
+  if(!VIEWS.includes(view)) view="home";
+  document.querySelectorAll("[data-view]").forEach(s => s.hidden = s.dataset.view!==view);
+  $("#topbar").hidden = view==="home";
+  $("#app").classList.toggle("home", view==="home");
+  if(view==="roulette") renderRoulette();
+  if(view==="song") startSong();
+  if(view==="shot") startShot();
+  window.scrollTo(0,0);
+}
+function go(view){ if(busy) return; if(location.hash.slice(1)===view) show(view); else location.hash = view==="home" ? "" : view; }
+window.addEventListener("hashchange", ()=>{ if(busy) return; show(location.hash.slice(1)||"home"); });
+document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", ()=>go(b.dataset.go)));
+$("#backBtn").addEventListener("click", ()=>{ if(busy) return; if(location.hash){ history.replaceState(null,"",location.pathname+location.search); } show("home"); });
+function setBusy(v){ busy=v; $("#backBtn").disabled=v; }
+
+/* ---------- 選択チップ ---------- */
+function makeChips(container, options, onChange){
+  let value=null;
+  options.forEach(o=>{
+    const b=el("button","chip"+(o.wide?" wide":""),o.label);
+    b.type="button"; b.setAttribute("aria-pressed","false"); b.dataset.v=o.v;
+    b.addEventListener("click",()=>{
+      value=o.v;
+      container.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", String(c.dataset.v===o.v)));
+      onChange && onChange(value);
+    });
+    container.appendChild(b);
+  });
+  return {
+    get:()=>value,
+    set:(v)=>{ value=v; container.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", String(c.dataset.v===v))); },
+  };
+}
+function loadingBlock(text){
+  const w=el("div","loading"); const d=el("div","dots"); d.append(el("i"),el("i"),el("i")); w.append(d, el("div",null,text)); return w;
+}
+
+/* ---------- バーテンダーとの会話 ---------- */
+const wait = ms => new Promise(r=>setTimeout(r, reduceMotion()?0:ms));
+function scrollEnd(node){ node.scrollIntoView({behavior: reduceMotion()?"auto":"smooth", block:"end"}); }
+async function botSay(root, text, typingMs=550){
+  const m=el("div","msg bot"); const av=el("div","avatar","99"); av.setAttribute("aria-hidden","true");
+  const b=el("div","bubble"); const ty=el("div","typing"); ty.append(el("i"),el("i"),el("i")); b.append(ty);
+  m.append(av,b); root.append(m); scrollEnd(m);
+  await wait(typingMs);
+  b.replaceChildren(el("span","who-name","AI BARTENDER"), document.createTextNode(text));
+  return m;
+}
+function meSay(root, text){ const m=el("div","msg me"); m.append(el("div","bubble",text)); root.append(m); return m; }
+// steps: [{key, q, opts:[{v,label}], cols}] を1問ずつ聞いて、回答オブジェクトを返す
+function chatFlow(root, steps){
+  return new Promise(async resolve=>{
+    root.replaceChildren(); const ans={};
+    setBusy(true);
+    for(const s of steps){
+      await botSay(root, s.q);
+      const v = await new Promise(pick=>{
+        const box=el("div","chips in-chat"+(s.cols===3?" three":""));
+        s.opts.forEach(o=>{
+          const b=el("button","chip"+(o.wide?" wide":""),o.label); b.type="button";
+          b.addEventListener("click",()=>{ box.remove(); meSay(root,o.label); pick(o.v); }, {once:true});
+          box.append(b);
+        });
+        root.append(box); setBusy(false); scrollEnd(box);
+      });
+      setBusy(true); ans[s.key]=v;
+      await wait(250);
+    }
+    resolve(ans);
+  });
+}
+function restartBtn(label, fn){ const b=el("button","restart",label); b.type="button"; b.addEventListener("click",()=>{ if(!busy) fn(); }); return b; }
+
+/* ---------- AI（任意）：サーバー経由でのみ呼び出す ---------- */
+async function askAI(kind, payload){
+  if(!CONFIG.aiEndpoint) return null;
+  const ctl = new AbortController(); const t=setTimeout(()=>ctl.abort(), CONFIG.aiTimeoutMs);
+  try{
+    const res = await fetch(CONFIG.aiEndpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({kind,...payload}),signal:ctl.signal});
+    if(!res.ok) return null;
+    return await res.json();
+  }catch(e){ return null; } finally{ clearTimeout(t); }
+}
+const str = (v,max=200) => (typeof v==="string" && v.trim()) ? v.trim().slice(0,max) : null;
+
+/* =====================================================================
+   KARAOKE：点数チャレンジ
+   ===================================================================== */
+// 将来の難易度別チャレンジ・特別ミッションはここに追加
+const TIERS = [
+  { from:95, label:"伝説級ミッション" },
+  { from:90, label:"上級チャレンジ" },
+  { from:85, label:"本気モード" },
+  { from:80, label:"実力勝負" },
+  { from:0,  label:"まずは肩慣らし" },
+];
+function getRange(){
+  const r = store.get("range");
+  if(r && Number.isInteger(r.min) && Number.isInteger(r.max) && r.min>=0 && r.max<=100 && r.min<=r.max) return r;
+  return {...CONFIG.scoreRange};
+}
+let range = getRange();
+function paintRange(){
+  $("#rangeNote").textContent = `抽選範囲：${range.min}〜${range.max}点`;
+  $("#minScore").value = range.min; $("#maxScore").value = range.max;
+}
+paintRange();
+let scoreDrawn=false;
+$("#scoreBtn").addEventListener("click", ()=>{
+  if(busy) return;
+  const target = randInt(range.min, range.max);     // 先に結果を決めてから演出
+  const num=$("#scoreNum"), val=$("#scoreVal"), btn=$("#scoreBtn"), tier=$("#scoreTier");
+  setBusy(true); btn.disabled=true; tier.textContent="";
+  num.classList.remove("idle","hit"); num.classList.add("rolling");
+  const finish=()=>{
+    val.textContent=target; num.classList.remove("rolling"); void num.offsetWidth; num.classList.add("hit");
+    tier.textContent = TIERS.find(t=>target>=t.from).label;
+    btn.textContent="もう一度抽選"; btn.disabled=false; setBusy(false); scoreDrawn=true;
+  };
+  if(reduceMotion()){ finish(); return; }
+  let delay=40, elapsed=0;
+  (function tick(){
+    val.textContent = randInt(range.min, range.max);
+    elapsed+=delay;
+    if(elapsed>1700){ finish(); return; }
+    if(elapsed>900) delay*=1.18;
+    setTimeout(tick, delay);
+  })();
+});
+$("#saveRange").addEventListener("click", ()=>{
+  const a=Number($("#minScore").value), b=Number($("#maxScore").value), msg=$("#setMsg");
+  if(!Number.isInteger(a)||!Number.isInteger(b)){ msg.textContent="整数で入力してください。"; return; }
+  if(a<0||b>100){ msg.textContent="0〜100点の間で入力してください。"; return; }
+  if(a>b){ msg.textContent="最低点は最高点以下にしてください。"; return; }
+  range={min:a,max:b}; store.set("range",range); paintRange(); msg.textContent=`${a}〜${b}点に変更しました。`;
+});
+$("#resetRange").addEventListener("click", ()=>{
+  range={...CONFIG.scoreRange}; store.set("range",range); paintRange(); $("#setMsg").textContent="初期設定（70〜95点）に戻しました。";
+});
+
+/* =====================================================================
+   KARAOKE：AI選曲アドバイザー
+   ※ 実在しない曲名を出さないよう、AIなし時はジャンルと方向性のみ提案
+   ===================================================================== */
+const SONG_MOODS = [
+  {v:"up",label:"テンションを上げたい"},{v:"chill",label:"しっとり歌いたい"},
+  {v:"party",label:"盛り上がりたい"},{v:"retro",label:"懐かしい曲を歌いたい"},
+  {v:"love",label:"恋愛ソングを歌いたい"},{v:"stress",label:"ストレスを発散したい"},
+  {v:"group",label:"みんなで楽しみたい"},{v:"any",label:"AIにおまかせ"},
+];
+const GENRES = [
+  {id:"hi", name:"ハイテンションJ-POP", moods:["up","party","group"], who:["group","solo"], tempo:"up", era:"new",
+   reason:"サビで一気に声を張れる曲が多く、1曲目からテンションを上げやすいジャンルです。", vibe:"明るい・キラキラ・ノリがいい", tip:"イントロから手拍子を誘うと、店内全体が温まります。"},
+  {id:"j90", name:"90〜00年代J-POP", moods:["retro","party","group"], who:["group","solo"], tempo:"up", era:"old",
+   reason:"世代を問わず知っている人が多く、サビで自然と合唱が起きやすいジャンルです。", vibe:"懐かしさとワクワクが同時に来る", tip:"サビ前に「ここから！」と声をかけると一体感が出ます。"},
+  {id:"showa", name:"昭和歌謡", moods:["retro","chill","love"], who:["solo"], tempo:"mid", era:"old",
+   reason:"メロディが覚えやすく、語尾の余韻で味が出るので、歌い慣れていなくても雰囲気が出ます。", vibe:"レトロ・色っぽい・ドラマチック", tip:"マイクを少し離して、語尾をたっぷり伸ばすのがコツです。"},
+  {id:"ballad", name:"王道バラード", moods:["chill","love"], who:["solo"], tempo:"ballad", era:"both",
+   reason:"じっくり聴かせられるので、点数チャレンジとも相性がいいジャンルです。", vibe:"しっとり・切ない・聴き入る", tip:"Aメロは抑えめに、サビで少しずつ声量を上げると映えます。"},
+  {id:"lovemid", name:"ミディアムテンポのラブソング", moods:["love","chill"], who:["solo","group"], tempo:"mid", era:"new",
+   reason:"甘すぎず重すぎないテンポで、気持ちを乗せて歌いやすいジャンルです。", vibe:"あたたかい・やさしい・少し照れる", tip:"サビのいちばん伝えたい一言を、丁寧に置くように歌うとぐっと伝わります。"},
+  {id:"rock", name:"J-ROCK・バンド系", moods:["stress","up"], who:["solo"], tempo:"up", era:"both",
+   reason:"高音やシャウトで思いきり声を出せて、歌い終わりのスッキリ感が段違いです。", vibe:"疾走感・熱い・爽快", tip:"間奏はエアギターで乗りきると盛り上がります。"},
+  {id:"punk", name:"パンク・メロコア", moods:["stress","party"], who:["group"], tempo:"up", era:"old",
+   reason:"短くて速い曲が多く、全力で叫んでも気持ちいいジャンルです。", vibe:"ストレート・勢い・汗をかく", tip:"コーラス部分はみんなで叫んで参加してもらいましょう。"},
+  {id:"anison", name:"アニソン", moods:["party","group","up"], who:["group","solo"], tempo:"up", era:"both",
+   reason:"知っている人が多く、合いの手や掛け声で一気に一体感が出るジャンルです。", vibe:"熱い・爽快・テンション最高潮", tip:"セリフや掛け声のパートは、聴いている人に振ると盛り上がります。"},
+  {id:"duet", name:"デュエットソング", moods:["love","group"], who:["group"], tempo:"mid", era:"both",
+   reason:"ふたりで掛け合うので、ひとりで歌うより気楽に楽しめます。", vibe:"かけあい・照れ・にぎやか", tip:"パートを決めずに、その場で歌い分けるのも楽しいです。"},
+  {id:"city", name:"シティポップ・R&B", moods:["chill","love"], who:["solo"], tempo:"mid", era:"old",
+   reason:"心地いいグルーヴ感が、ショットバーの夜の空気によく合います。", vibe:"おしゃれ・夜・大人", tip:"リズムに合わせて体を軽く揺らすと、それだけで雰囲気が出ます。"},
+  {id:"enka", name:"演歌・ムード歌謡", moods:["retro","chill"], who:["solo"], tempo:"ballad", era:"old",
+   reason:"一曲で世界観に入り込めて、渋さで店内の視線を集められるジャンルです。", vibe:"渋い・情熱・人生", tip:"こぶしは小さめから始めて、決めどころだけ大きく回すと映えます。"},
+  {id:"yogaku", name:"洋楽ポップ", moods:["up","party"], who:["solo","group"], tempo:"up", era:"new",
+   reason:"サビのフレーズが短く覚えやすい曲が多く、英語が苦手でもノリで乗れます。", vibe:"華やか・パーティー・ダンサブル", tip:"歌えない部分はハミングでOK。ノリを止めないのが大事です。"},
+  {id:"idol", name:"アイドルソング", moods:["party","group","up"], who:["group"], tempo:"up", era:"both",
+   reason:"振りやコールが楽しく、歌う人も聴く人もいっしょに参加できるジャンルです。", vibe:"かわいい・元気・お祭り", tip:"サビの振りをひとつだけみんなでまねすると、一気にひとつになります。"},
+  {id:"vocalo", name:"ボカロ曲", moods:["stress","up"], who:["solo"], tempo:"up", era:"new",
+   reason:"テンポが速く、早口や高音にチャレンジするスリルが味わえるジャンルです。", vibe:"スピード感・中毒性・テクニカル", tip:"早口パートは歌詞を目で追うより、リズムで覚えると乗りきれます。"},
+  {id:"cheer", name:"みんなで歌える応援ソング", moods:["group","party","stress"], who:["group"], tempo:"mid", era:"both",
+   reason:"前向きな歌詞を大勢で歌うと、自然と気分が晴れます。", vibe:"前向き・あったかい・エモい", tip:"ラストのサビは全員で。締めの1曲にもぴったりです。"},
+];
+/* カラオケ定番曲リスト（実在する曲のみ）。g = 当てはまるジャンルID（空白区切り）
+   曲を足すときは ["曲名","アーティスト","ジャンルID"] を1行追加 */
+const SONGS = [
+  ["ミックスナッツ","Official髭男dism","hi"],["怪物","YOASOBI","hi"],["夜に駆ける","YOASOBI","hi"],["アイドル","YOASOBI","hi idol"],
+  ["新時代","Ado","hi"],["うっせぇわ","Ado","hi"],["Bling-Bang-Bang-Born","Creepy Nuts","hi"],["ケセラセラ","Mrs. GREEN APPLE","hi cheer"],
+  ["青と夏","Mrs. GREEN APPLE","hi"],["恋","星野源","hi lovemid"],
+  ["LOVEマシーン","モーニング娘。","j90 idol"],["DEPARTURES","globe","j90"],["HOWEVER","GLAY","j90 ballad"],
+  ["愛のままにわがままに 僕は君だけを傷つけない","B'z","j90"],["ultra soul","B'z","j90 rock"],["TSUNAMI","サザンオールスターズ","j90 ballad"],
+  ["粉雪","レミオロメン","j90 ballad"],["CAN YOU CELEBRATE?","安室奈美恵","j90 ballad"],["夜空ノムコウ","SMAP","j90"],["Automatic","宇多田ヒカル","j90 city"],
+  ["異邦人","久保田早紀","showa"],["喝采","ちあきなおみ","showa"],["青い珊瑚礁","松田聖子","showa idol"],["赤いスイートピー","松田聖子","showa"],
+  ["六本木心中","アン・ルイス","showa rock"],["ルビーの指環","寺尾聰","showa city"],["勝手にシンドバッド","サザンオールスターズ","showa"],
+  ["時の流れに身をまかせ","テレサ・テン","showa enka"],["川の流れのように","美空ひばり","showa enka ballad"],
+  ["糸","中島みゆき","ballad"],["366日","HY","ballad"],["雪の華","中島美嘉","ballad"],["First Love","宇多田ヒカル","ballad"],
+  ["奏(かなで)","スキマスイッチ","ballad"],["ハナミズキ","一青窈","ballad"],["涙そうそう","夏川りみ","ballad"],["Pretender","Official髭男dism","ballad lovemid"],
+  ["マリーゴールド","あいみょん","lovemid"],["愛を伝えたいだとか","あいみょん","lovemid"],["115万キロのフィルム","Official髭男dism","lovemid"],
+  ["水平線","back number","lovemid"],["高嶺の花子さん","back number","lovemid"],["3月9日","レミオロメン","lovemid"],["ドライフラワー","優里","lovemid ballad"],
+  ["天体観測","BUMP OF CHICKEN","rock j90"],["前前前世","RADWIMPS","rock anison"],["群青日和","東京事変","rock"],["リライト","ASIAN KUNG-FU GENERATION","rock anison"],
+  ["ギターと孤独と蒼い惑星","結束バンド","rock anison"],["丸の内サディスティック","椎名林檎","rock city"],["ないものねだり","KANA-BOON","rock"],["ガッツだぜ!!","ウルフルズ","rock cheer"],
+  ["リンダリンダ","THE BLUE HEARTS","punk"],["情熱の薔薇","THE BLUE HEARTS","punk"],["小さな恋のうた","MONGOL800","punk cheer"],
+  ["あなたに","MONGOL800","punk lovemid"],["STAY GOLD","Hi-STANDARD","punk"],
+  ["残酷な天使のテーゼ","高橋洋子","anison"],["魂のルフラン","高橋洋子","anison"],["紅蓮華","LiSA","anison rock"],["炎","LiSA","anison ballad"],
+  ["残響散歌","Aimer","anison rock"],["君の知らない物語","supercell","anison"],["ウィーアー!","きただにひろし","anison"],["鳥の詩","Lia","anison"],
+  ["God knows...","涼宮ハルヒ(CV:平野綾)","anison"],["CHA-LA HEAD-CHA-LA","影山ヒロノブ","anison"],["宇宙戦艦ヤマト","ささきいさお","anison"],
+  ["3年目の浮気","ヒロシ&キーボー","duet"],["銀座の恋の物語","石原裕次郎・牧村旬子","duet"],["ロンリー・チャップリン","鈴木聖美 with ラッツ&スター","duet"],
+  ["男と女のラブゲーム","日野美歌・葵司朗","duet"],["居酒屋","五木ひろし・木の実ナナ","duet"],["世界中の誰よりきっと","中山美穂&WANDS","duet j90"],
+  ["愛が生まれた日","藤谷美和子・大内義昭","duet"],
+  ["プラスティック・ラブ","竹内まりや","city"],["真夜中のドア〜stay with me","松原みき","city showa"],["RIDE ON TIME","山下達郎","city"],
+  ["クリスマス・イブ","山下達郎","city ballad"],["恋におちて -Fall in love-","小林明子","city ballad"],["STAY TUNE","Suchmos","city"],
+  ["天城越え","石川さゆり","enka"],["津軽海峡・冬景色","石川さゆり","enka"],["北酒場","細川たかし","enka"],["与作","北島三郎","enka"],
+  ["舟唄","八代亜紀","enka"],["雪國","吉幾三","enka"],["酒よ","吉幾三","enka"],
+  ["Shape of You","Ed Sheeran","yogaku"],["Uptown Funk","Mark Ronson ft. Bruno Mars","yogaku"],["Dancing Queen","ABBA","yogaku"],
+  ["I Want It That Way","Backstreet Boys","yogaku"],["Let It Go","Idina Menzel","yogaku"],["Shake It Off","Taylor Swift","yogaku"],
+  ["Happy","Pharrell Williams","yogaku"],["September","Earth, Wind & Fire","yogaku"],["Dynamite","BTS","yogaku"],
+  ["恋するフォーチュンクッキー","AKB48","idol"],["ヘビーローテーション","AKB48","idol"],["青春アミーゴ","修二と彰","idol"],
+  ["走れ!","ももいろクローバーZ","idol"],["サイレントマジョリティー","欅坂46","idol"],["学園天国","フィンガー5","idol showa"],["夏祭り","Whiteberry","idol j90"],
+  ["千本桜","黒うさP feat. 初音ミク","vocalo"],["メルト","ryo(supercell) feat. 初音ミク","vocalo"],["ロキ","みきとP feat. 鏡音リン・レン","vocalo"],
+  ["砂の惑星","ハチ feat. 初音ミク","vocalo"],["シャルル","バルーン feat. flower","vocalo"],["脳漿炸裂ガール","れるりり feat. 初音ミク・GUMI","vocalo"],
+  ["KING","Kanaria feat. GUMI","vocalo"],["ヴァンパイア","DECO*27 feat. 初音ミク","vocalo"],
+  ["世界に一つだけの花","SMAP","cheer j90"],["それが大事","大事MANブラザーズバンド","cheer j90"],["栄光の架橋","ゆず","cheer ballad"],
+  ["終わりなき旅","Mr.Children","cheer rock"],["負けないで","ZARD","cheer j90"],["愛は勝つ","KAN","cheer j90"],["明日があるさ","ウルフルズ","cheer"],["RPG","SEKAI NO OWARI","cheer"],
+].map(([t,a,g])=>({t,a,g:g.split(" ")}));
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(rand()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+const songPools = {};   // ジャンルごとに、まだ出していない曲を順番に出す
+function pickSongs(genreId, n=3){
+  const all = SONGS.filter(x=>x.g.includes(genreId));
+  if(!all.length) return [];
+  let pool = songPools[genreId];
+  if(!pool || pool.length<n) pool = songPools[genreId] = (pool||[]).concat(shuffle(all).filter(x=>!(pool||[]).includes(x)));
+  return pool.splice(0, Math.min(n, all.length));
+}
+const SONG_STEPS = [
+  {key:"mood",  q:"いらっしゃいませ。今夜はどんな気分で歌いたいですか？", opts:SONG_MOODS},
+  {key:"who",   q:"いいですね。ひとりで歌いますか？ みんなで歌いますか？", cols:3, opts:[{v:"solo",label:"ひとりで"},{v:"group",label:"みんなで"},{v:"any",label:"どちらでも"}]},
+  {key:"tempo", q:"テンポはどうしましょう？", cols:3, opts:[{v:"ballad",label:"バラード"},{v:"up",label:"アップテンポ"},{v:"any",label:"おまかせ"}]},
+  {key:"era",   q:"最後に、昔の曲と最近の曲、どちらの気分ですか？", cols:3, opts:[{v:"old",label:"昔の曲"},{v:"new",label:"最近の曲"},{v:"any",label:"どちらでも"}]},
+];
+
+function rankGenres(a){
+  return GENRES.map(g=>{
+    let s = rand()*0.9;
+    if(a.mood==="any") s += rand()*3; else if(g.moods.includes(a.mood)) s += 3;
+    if(a.who!=="any" && g.who.includes(a.who)) s += 1;
+    if(a.tempo!=="any"){ if(g.tempo===a.tempo) s+=2; else if(g.tempo==="mid") s+=0.8; }
+    if(a.era!=="any"){ if(g.era===a.era) s+=2; else if(g.era==="both") s+=1; }
+    return {g,s};
+  }).sort((x,y)=>y.s-x.s).map(x=>x.g);
+}
+let songRank=[], songIdx=0, songAnswers=null;
+async function startSong(){
+  const chat=$("#songChat"); $("#songOut").replaceChildren();
+  songAnswers = await chatFlow(chat, SONG_STEPS);
+  const [ai] = await Promise.all([askAI("song",{answers:songAnswers}), botSay(chat,"かしこまりました。今の気分に合うジャンルを考えますね…",1300)]);
+  songRank = rankGenres(songAnswers); songIdx=0;
+  // AIの応答は形式を確認してから使い、だめなら事前定義の提案に切り替え
+  if(ai && str(ai.genre,40) && str(ai.reason) && str(ai.vibe,80) && str(ai.tip)){
+    // AIが出した曲は、登録済みの曲リストにあるものだけ採用（存在しない曲名を出さない）
+    const ok = Array.isArray(ai.songs) ? ai.songs.map(x=>SONGS.find(sg=>sg.t===x)).filter(Boolean).slice(0,3) : [];
+    songRank.unshift({id:"ai", name:str(ai.genre,40), reason:str(ai.reason), vibe:str(ai.vibe,80), tip:str(ai.tip), aiSongs:ok});
+  }
+  await botSay(chat, `今夜のあなたには「${songRank[0].name}」がおすすめです。`, 700);
+  setBusy(false);
+  renderSong();
+}
+async function renderSong(){
+  const g=songRank[songIdx % songRank.length];
+  const out=$("#songOut"); out.replaceChildren();
+  const r=el("div","result");
+  r.append(el("div","kicker","今夜のおすすめジャンル"), el("h3",null,g.name));
+  const dl=el("dl");
+  [["すすめる理由",g.reason],["曲の雰囲気",g.vibe],["歌うときの楽しみ方",g.tip]].forEach(([t,d])=>{ dl.append(el("dt",null,t), el("dd",null,d)); });
+  r.append(dl);
+  const songBox=el("div","songs");
+  const paintSongs=()=>{
+    const list = g.aiSongs && g.aiSongs.length ? g.aiSongs : pickSongs(g.id);
+    songBox.replaceChildren();
+    if(!list.length) return;
+    songBox.append(el("div","songs-h","おすすめ曲"));
+    const ol=el("ol");
+    list.forEach(x=>{ const li=el("li"); li.append(el("span","st",x.t), el("span","sa",x.a)); ol.append(li); });
+    songBox.append(ol);
+    if(!(g.aiSongs && g.aiSongs.length) && SONGS.filter(x=>x.g.includes(g.id)).length>3){
+      const more=el("button","more","ほかの曲を見る"); more.type="button";
+      more.addEventListener("click",paintSongs); songBox.append(more);
+    }
+  };
+  paintSongs(); r.append(songBox);
+  const next=songRank[(songIdx+1)%songRank.length];
+  r.append(el("div","alt","ほかの候補："+next.name));
+  out.append(r);
+  const acts=el("div","actions");
+  const again=el("button","btn","別のジャンルを提案"); again.type="button";
+  again.addEventListener("click", async ()=>{
+    if(busy) return; setBusy(true); const chat=$("#songChat");
+    out.replaceChildren(); meSay(chat,"ほかにもある？"); songIdx++;
+    await botSay(chat, `もちろんです。それなら「${songRank[songIdx%songRank.length].name}」はいかがでしょう。`, 800);
+    setBusy(false); renderSong();
+  });
+  acts.append(again, restartBtn("最初から質問し直す", ()=>{ window.scrollTo(0,0); startSong(); }));
+  out.append(acts); scrollEnd(r);
+}
+
+/* =====================================================================
+   SHOT：AIショット診断（登録済み・提供中の商品からのみ推薦）
+   ===================================================================== */
+const SHOT_MOODS=[
+  {v:"party",label:"とにかく盛り上がりたい"},{v:"sweet",label:"甘いものが飲みたい"},
+  {v:"refresh",label:"スッキリしたい"},{v:"new",label:"いつもと違うものに挑戦したい"},
+  {v:"adult",label:"ちょっと大人な気分"},{v:"any",label:"AIにおまかせ"},
+];
+const FLAVORS=[
+  {v:"sweet",label:"甘め"},{v:"fruity",label:"フルーティー"},{v:"sour",label:"酸味がある"},
+  {v:"bitter",label:"苦味がある"},{v:"clean",label:"スッキリ"},{v:"any",label:"こだわらない"},
+];
+const labelOf=(list,v)=>(list.find(x=>x.v===v)||{}).label||"";
+const SHOT_STEPS=[
+  {key:"mood",   q:"こんばんは。今夜はどんな気分ですか？", opts:SHOT_MOODS},
+  {key:"flavor", q:"かしこまりました。味の好みを教えてください。", opts:FLAVORS},
+];
+
+function rankShots(mood, flavor){
+  return availableShots().map(s=>{
+    let sc=rand()*0.9;
+    const mHit = mood!=="any" && Array.isArray(s.moods) && s.moods.includes(mood);
+    const fHit = flavor!=="any" && Array.isArray(s.flavors) && s.flavors.includes(flavor);
+    if(mood==="any") sc+=rand()*2; else if(mHit) sc+=3;
+    if(flavor==="any") sc+=rand()*2; else if(fHit) sc+=3;
+    return {s,sc,mHit,fHit};
+  }).sort((a,b)=>b.sc-a.sc);
+}
+function shotReason(x, mood, flavor){
+  const desc = str(x.s.description,120) || "この店のショット";
+  const parts=[];
+  if(x.mHit) parts.push(`「${labelOf(SHOT_MOODS,mood)}」という今の気分にぴったりの一杯です。`);
+  if(x.fHit) parts.push(`${labelOf(FLAVORS,flavor)}が好きなあなたには、${desc}が合います。`);
+  if(!parts.length) parts.push(`今夜は少し冒険して、${desc}を試してみませんか。`);
+  return parts.join("");
+}
+let shotRank=[], shotIdx=0;
+async function startShot(){
+  const chat=$("#shotChat"); $("#shotOut").replaceChildren();
+  const {mood, flavor} = await chatFlow(chat, SHOT_STEPS);
+  const list=availableShots();
+  const [ai] = await Promise.all([
+    list.length ? askAI("shot",{mood,flavor,menu:list.map(s=>({id:s.id,name:s.name,category:s.category,description:s.description,flavors:s.flavors}))}) : null,
+    botSay(chat,"ありがとうございます。メニューの中から選んでみますね…",1300)
+  ]);
+  shotRank=rankShots(mood,flavor).map(x=>({...x, reason:shotReason(x,mood,flavor)}));
+  // AIが返したIDが、提供中メニューに実在する場合だけ採用
+  if(ai && typeof ai.id==="string"){
+    const i=shotRank.findIndex(x=>x.s.id===ai.id);
+    if(i>=0){ const [hit]=shotRank.splice(i,1); if(str(ai.reason)) hit.reason=str(ai.reason); shotRank.unshift(hit); }
+  }
+  shotIdx=0;
+  if(shotRank.length) await botSay(chat, `あなたにおすすめの一杯は…「${shotRank[0].s.name}」です。`, 700);
+  setBusy(false); renderShot();
+}
+function shotCard(s, kicker, reason){
+  const r=el("div","result");
+  r.append(el("div","kicker",kicker));
+  if(s.image){ const img=el("img"); img.src=s.image; img.alt=s.name; img.style.cssText="width:100%;border-radius:14px;margin-top:10px;aspect-ratio:4/3;object-fit:cover"; r.append(img); }
+  r.append(el("h3",null,s.name));
+  if(reason){ const dl=el("dl"); dl.append(el("dt",null,"おすすめの理由"), el("dd",null,reason)); r.append(dl); }
+  const sp=el("div","specs");
+  const specs=[["種類",s.category]];
+  if(typeof s.abv==="number") specs.push(["度数",fmtAbv(s.abv)]);
+  if(typeof s.price==="number") specs.push(["価格",fmtPrice(s.price)]);
+  specs.filter(([,v])=>v).forEach(([k,v])=>{ const c=el("span",null,k+" "); c.append(el("b",null,v)); sp.append(c); });
+  if(sp.childElementCount) r.append(sp);
+  return r;
+}
+function renderShot(){
+  const out=$("#shotOut"); out.replaceChildren();
+  const reset=restartBtn("最初から質問し直す", ()=>{ window.scrollTo(0,0); startShot(); });
+  if(!shotRank.length){
+    out.append(el("div","notice","提供中のショットが登録されていないため、診断できません。スタッフにおたずねください。"));
+    out.append(reset); return;
+  }
+  const x=shotRank[shotIdx%shotRank.length];
+  const card=shotCard(x.s, "あなたへのおすすめショット", x.reason);
+  out.append(card);
+  const acts=el("div","actions");
+  if(shotRank.length>1){
+    const again=el("button","btn","別のショットを提案"); again.type="button";
+    again.addEventListener("click", async ()=>{
+      if(busy) return; setBusy(true); const chat=$("#shotChat");
+      out.replaceChildren(); meSay(chat,"他にもおすすめある？"); shotIdx++;
+      await botSay(chat, `もちろんです。今の気分に近いもので、「${shotRank[shotIdx%shotRank.length].s.name}」もおすすめです。`, 800);
+      setBusy(false); renderShot();
+    });
+    acts.append(again);
+  }
+  acts.append(reset); out.append(acts);
+  out.append(el("p","note","ご注文はスタッフまで。お水もいっしょにどうぞ。"));
+  scrollEnd(card);
+}
+
+/* =====================================================================
+   SHOT：ルーレット
+   抽選（pickIndex）を先に行い、その結果に止まるよう回転角を計算する
+   ===================================================================== */
+let wheelRot=0, wheelItems=[];
+const SVGNS="http://www.w3.org/2000/svg";
+const SEG_FILLS=["#1d170f","#2a2114"];
+function renderRoulette(){
+  const body=$("#rouletteBody"); body.replaceChildren();
+  wheelItems=availableShots();
+  if(!wheelItems.length){
+    const e=el("div","empty"); e.append(el("b",null,"抽選できるショットがありません"), el("span",null,"提供中のメニューが登録されると、ルーレットが使えます。"));
+    body.append(e); return;
+  }
+  const stage=el("div","wheel-stage");
+  const ptr=document.createElementNS(SVGNS,"svg"); ptr.setAttribute("viewBox","0 0 34 44"); ptr.setAttribute("class","pointer"); ptr.setAttribute("aria-hidden","true");
+  ptr.innerHTML='<path d="M17 44L2 8a16 16 0 0130 0z" fill="#f1d796"/><circle cx="17" cy="14" r="5" fill="#0c0a07"/>';
+  const svg=document.createElementNS(SVGNS,"svg"); svg.id="wheel"; svg.setAttribute("viewBox","-110 -110 220 220"); svg.setAttribute("role","img");
+  svg.setAttribute("aria-label",`ルーレット：${wheelItems.length}種類のショット`);
+  const n=wheelItems.length, a=360/n;
+  const outer=document.createElementNS(SVGNS,"circle"); outer.setAttribute("r","106"); outer.setAttribute("fill","#0c0a07"); outer.setAttribute("stroke","#d4ad62"); outer.setAttribute("stroke-width","3");
+  svg.append(outer);
+  const pt=(deg,r)=>{ const rad=(deg-90)*Math.PI/180; return [r*Math.cos(rad), r*Math.sin(rad)]; };
+  const fs = n<=6?11:n<=10?9:n<=16?7:5.5;
+  const maxChars = n<=6?9:n<=10?8:n<=16?7:5;
+  wheelItems.forEach((s,i)=>{
+    const g=document.createElementNS(SVGNS,"g");
+    if(n===1){
+      const c=document.createElementNS(SVGNS,"circle"); c.setAttribute("r","100"); c.setAttribute("fill",SEG_FILLS[0]); g.append(c);
+    }else{
+      const [x1,y1]=pt(i*a,100), [x2,y2]=pt((i+1)*a,100);
+      const p=document.createElementNS(SVGNS,"path");
+      p.setAttribute("d",`M0 0L${x1.toFixed(2)} ${y1.toFixed(2)}A100 100 0 ${a>180?1:0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}Z`);
+      p.setAttribute("fill", SEG_FILLS[i%2]); p.setAttribute("stroke","#8d6d34"); p.setAttribute("stroke-width","0.8");
+      g.append(p);
+    }
+    const mid=(i+0.5)*a;
+    const t=document.createElementNS(SVGNS,"text");
+    const label = s.name.replace(/^サンプル・/,"").replace(/（.*?）/g,"");
+    t.textContent = label.length>maxChars ? label.slice(0,maxChars-1)+"…" : label;
+    t.setAttribute("x","0"); t.setAttribute("y","-62"); t.setAttribute("text-anchor","middle"); t.setAttribute("dominant-baseline","middle");
+    t.setAttribute("fill", i%2 ? "#f1e8d6" : "#f1d796"); t.setAttribute("font-size",String(fs)); t.setAttribute("font-weight","700");
+    t.setAttribute("font-family","Zen Kaku Gothic New, sans-serif");
+    t.setAttribute("transform",`rotate(${mid})`);
+    if(n>8){ t.setAttribute("y","-58"); t.setAttribute("transform",`rotate(${mid}) rotate(-90 0 -58)`); }
+    g.append(t);
+    // 外周のネオン点
+    const [dx,dy]=pt(i*a,103); const dot=document.createElementNS(SVGNS,"circle"); dot.setAttribute("cx",dx.toFixed(2)); dot.setAttribute("cy",dy.toFixed(2)); dot.setAttribute("r","2.2"); dot.setAttribute("fill", i%2?"#4fe3ff":"#ff4fa0");
+    g.append(dot);
+    svg.append(g);
+  });
+  wheelRot = wheelRot % 360;
+  svg.style.transition="none"; svg.style.transform=`rotate(${wheelRot}deg)`;
+  const hub=el("div","hub","99");
+  stage.append(svg, ptr, hub);
+  body.append(stage);
+  const live=el("div","sr"); live.id="wheelLive"; live.setAttribute("aria-live","polite"); body.append(live);
+  const out=el("div"); out.id="rouletteOut"; body.append(out);
+  const acts=el("div","actions"); const start=el("button","btn","START"); start.type="button"; start.id="spinBtn";
+  start.addEventListener("click", spin); acts.append(start); body.append(acts);
+  body.append(el("p","note",`対象：提供中の${n}種類（在庫切れの商品は入りません）`));
+}
+function spin(){
+  if(busy || !wheelItems.length) return;
+  const n=wheelItems.length, a=360/n;
+  const idx=weightedPick(wheelItems);                 // 内部抽選
+  const jitter=(rand()-0.5)*a*0.6;                    // 区切り線に止まらないよう中央付近
+  const center=(idx+0.5)*a + jitter;
+  const cur=((wheelRot%360)+360)%360;
+  const toTop=((360-center) - cur + 720) % 360;       // 現在位置から結果が上（針）に来るまでの角度
+  const turns = reduceMotion()?0:(5+randInt(0,2));
+  wheelRot += turns*360 + toTop + (toTop<1 && turns===0 ? 360 : 0);
+  const svg=$("#wheel"), btn=$("#spinBtn"), out=$("#rouletteOut"), stage=svg.parentElement;
+  setBusy(true); btn.disabled=true; btn.textContent="回転中…"; out.replaceChildren(); stage.classList.remove("lit");
+  void svg.getBoundingClientRect();
+  svg.style.transition = reduceMotion() ? "transform .3s ease-out" : "";
+  let done=false;
+  const finish=()=>{
+    if(done) return; done=true;
+    // 表示位置から当たりを逆算し、内部結果と一致するか確認
+    const landed = Math.floor((((360 - (wheelRot%360)) % 360) / a)) % n;
+    if(landed!==idx) console.warn("roulette mismatch", landed, idx);
+    const s=wheelItems[idx];
+    stage.classList.add("lit");
+    out.replaceChildren(shotCard(s,"今夜の1杯はこれ！",null));
+    $("#wheelLive").textContent=`結果：${s.name}`;
+    btn.textContent="もう一度回す"; btn.disabled=false; setBusy(false);
+    out.scrollIntoView({behavior: reduceMotion()?"auto":"smooth", block:"nearest"});
+  };
+  svg.addEventListener("transitionend", finish, {once:true});
+  setTimeout(finish, reduceMotion()?600:5200);
+  requestAnimationFrame(()=>{ svg.style.transform=`rotate(${wheelRot}deg)`; });
+}
+
+/* ---------- 起動 ---------- */
+show(location.hash.slice(1)||"home");
+</script>
+</body>
+</html>
