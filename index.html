@@ -209,11 +209,16 @@ details.settings[open] summary::after{content:"－"}
 .result{margin-top:18px;border-radius:22px;border:1px solid var(--hue);background:var(--ink-2);padding:22px 18px;box-shadow:0 0 40px -12px var(--hue);animation:rise .5s ease-out}
 @keyframes rise{from{opacity:.0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .result .kicker{font-size:12px;letter-spacing:.24em;color:var(--hue)}
-.result h3{margin:6px 0 0;font-family:var(--f-jp-head);font-weight:800;font-size:clamp(26px,7.4vw,34px);line-height:1.3;text-wrap:balance}
+.result h3{word-break:keep-all;overflow-wrap:anywhere;margin:6px 0 0;font-family:var(--f-jp-head);font-weight:800;font-size:clamp(26px,7.4vw,34px);line-height:1.3;text-wrap:balance}
 .result .badge{display:inline-block;margin-top:8px;padding:2px 10px;border:1px dashed var(--warn);border-radius:999px;color:var(--warn);font-size:12px}
 .result dl{margin:16px 0 0;display:grid;gap:14px}
 .result dt{font-size:12px;letter-spacing:.16em;color:var(--gold)}
 .result dd{margin:2px 0 0;font-size:15px}
+.match{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:4px 10px;margin-top:12px}
+.match span{font-size:12px;letter-spacing:.16em;color:var(--gold)}
+.match b{font-family:var(--f-num);font-weight:900;font-size:30px;line-height:1;color:var(--hue);font-variant-numeric:tabular-nums}
+.match i{grid-column:1/-1;height:6px;border-radius:3px;background:var(--ink-3);position:relative;overflow:hidden}
+.match i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:linear-gradient(90deg,var(--gold),var(--hue));border-radius:inherit}
 .specs{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .specs span{padding:4px 12px;border-radius:999px;background:var(--ink-3);border:1px solid var(--line);font-size:13px;color:var(--mute)}
 .specs b{color:var(--ivory);font-weight:500;font-variant-numeric:tabular-nums}
@@ -411,44 +416,60 @@ const CONFIG = {
    price     価格（円）。未定は null
    abv       アルコール度数（%）。未定は null
    description  味の説明（診断の推薦理由に使われます）
-   flavors   味の特徴：sweet 甘め / fruity フルーティー / sour 酸味 / bitter 苦味 / clean スッキリ
-   moods     合う気分：party 盛り上がり / sweet 甘いもの / refresh スッキリ / new 挑戦 / adult 大人
+   match     ショット診断の相性（0〜100）。診断の答え1つずつに、このお酒がどれだけ合うか
+             mood   気分：party 盛り上がりたい / sweet 甘いもの / refresh スッキリ / new 挑戦 / adult 大人
+             flavor 味　：sweet 甘め / fruity フルーティー / sour 酸味 / bitter 苦味 / clean スッキリ
+             相性 = 気分の点 × 50% ＋ 味の点 × 50%。「おまかせ」「こだわらない」は55〜85点のランダム
+             match がないお酒は診断では推薦しない
    image     画像URL（なければ null）
    available 提供中なら true、在庫切れ・販売停止なら false
    weight    ルーレットの当たりやすさ（基本は 1。将来の確率調整用）
    demo      開発用の仮データなら true
    ===================================================================== */
 const MENU = [
-  { id:"cuervo-margarita", name:"クエルボ マルガリータ", short:"マルガリータ", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
-    description:"ライムの甘酸っぱさが広がる、マルガリータ味のテキーラ", flavors:["sour", "sweet", "fruity"], moods:["party", "sweet", "refresh"] },
-  { id:"cuervo-gold", name:"クエルボ ゴールド", short:"クエルボ ゴールド", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
-    description:"まろやかでほんのり甘い、定番のゴールドテキーラ", flavors:["sweet", "clean"], moods:["party"] },
+  { id:"cuervo-margarita", name:"クエルボ マルガリータ", short:"マルガリータ", category:"テキーラベースのリキュール", price:null, abv:18, image:null, available:true, weight:1,
+    description:"クエルボのテキーラにライムの爽やかさとオレンジの甘みを合わせた、マルガリータ味のリキュール",
+    match:{ mood:{party:80, sweet:85, refresh:70, new:30, adult:20}, flavor:{sweet:70, fruity:80, sour:95, bitter:5, clean:50} } },
+  { id:"cuervo-gold", name:"クエルボ ゴールド", short:"クエルボ ゴールド", category:"テキーラ", price:null, abv:40, image:null, available:true, weight:1,
+    description:"世界No.1テキーラブランドのゴールド。まろやかでほんのり甘く、ライムと塩で楽しむ定番",
+    match:{ mood:{party:85, sweet:30, refresh:40, new:30, adult:55}, flavor:{sweet:45, fruity:15, sour:20, bitter:30, clean:60} } },
   { id:"cuervo-silver", name:"クエルボ シルバー", short:"クエルボ シルバー", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
-    description:"クリアでキレのある、ライムと相性のいいシルバーテキーラ", flavors:["clean", "sour"], moods:["party", "refresh"] },
+    description:"クエルボの無色透明なテキーラ。クリアでキレがあり、ライムをかじると爽快",
+    match:{ mood:{party:90, sweet:10, refresh:70, new:30, adult:50}, flavor:{sweet:10, fruity:15, sour:65, bitter:20, clean:90} } },
   { id:"sauza-gold", name:"サウザ ゴールド", short:"サウザ ゴールド", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
-    description:"やわらかい甘みのある、飲みやすいゴールドテキーラ", flavors:["sweet", "clean"], moods:["party"] },
+    description:"メキシコの老舗サウザのゴールド。やわらかな甘みとコクがあり飲みやすい",
+    match:{ mood:{party:80, sweet:30, refresh:40, new:35, adult:55}, flavor:{sweet:50, fruity:15, sour:20, bitter:30, clean:55} } },
   { id:"sauza-silver", name:"サウザ シルバー", short:"サウザ シルバー", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
-    description:"すっきり軽やかな、シャープな後味のシルバーテキーラ", flavors:["clean", "sour"], moods:["party", "refresh"] },
-  { id:"1800-reposado", name:"1800 レポサド", short:"1800 レポサド", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
-    description:"樽で寝かせた、バニラのような香りとなめらかさ", flavors:["sweet", "bitter"], moods:["adult"] },
-  { id:"tres-anejo", name:"トレスジェネレーション アネホ", short:"トレス アネホ", category:"テキーラ", price:null, abv:null, image:null, available:true, weight:1,
-    description:"長く熟成させた、カラメルと樽の深い香り", flavors:["bitter", "sweet"], moods:["adult", "new"] },
-  { id:"double-h", name:"Double H", short:"Double H", category:"ショット", price:null, abv:null, image:null, available:true, weight:1,
-    description:null, flavors:[], moods:["new"] },
+    description:"サウザの無色透明なテキーラ。すっきり軽やかで、シャープな後味",
+    match:{ mood:{party:85, sweet:10, refresh:75, new:35, adult:45}, flavor:{sweet:10, fruity:15, sour:60, bitter:20, clean:85} } },
+  { id:"1800-reposado", name:"1800 レポサド", short:"1800 レポサド", category:"テキーラ（樽熟成）", price:null, abv:40, image:null, available:true, weight:1,
+    description:"アガベ100%を樽で熟成させたテキーラ。バニラのような甘い香りとなめらかな口当たり",
+    match:{ mood:{party:40, sweet:30, refresh:25, new:55, adult:90}, flavor:{sweet:70, fruity:15, sour:5, bitter:45, clean:40} } },
+  { id:"tres-anejo", name:"トレスジェネレーション アネホ", short:"トレス アネホ", category:"テキーラ（長期熟成）", price:null, abv:null, image:null, available:true, weight:1,
+    description:"サウザが造る長期熟成テキーラ。カラメルと樽の深い香りを、ゆっくり味わう一杯",
+    match:{ mood:{party:25, sweet:45, refresh:15, new:65, adult:100}, flavor:{sweet:55, fruity:10, sour:0, bitter:65, clean:30} } },
+  { id:"double-h", name:"Double H", short:"Double H", category:"リキュール（沖縄）", price:null, abv:null, image:null, available:true, weight:1,
+    description:"泡盛にハブと13種類のハーブを漬け込んだ沖縄のリキュール。爽やかさの奥にハーブの複雑な味わい",
+    match:{ mood:{party:75, sweet:15, refresh:25, new:95, adult:55}, flavor:{sweet:20, fruity:10, sour:5, bitter:80, clean:25} } },
   { id:"absinthe", name:"アブサン", short:"アブサン", category:"リキュール", price:null, abv:null, image:null, available:true, weight:1,
-    description:"ハーブとアニスの香りが強い、個性派のお酒", flavors:["bitter"], moods:["new", "adult"] },
-  { id:"dover-spirits", name:"ドーバースピリッツ", short:"ドーバースピリッツ", category:"スピリッツ", price:null, abv:null, image:null, available:true, weight:1,
-    description:null, flavors:[], moods:[] },
-  { id:"spirytus", name:"スピリタス", short:"スピリタス", category:"ウォッカ", price:null, abv:null, image:null, available:true, weight:1, recommend:false,
-    description:"世界でもトップクラスに度数の高いウォッカ", flavors:[], moods:[] },
+    description:"ニガヨモギやアニスなどのハーブを使った薬草系のお酒。独特の香りとほろ苦さ",
+    match:{ mood:{party:50, sweet:10, refresh:40, new:90, adult:70}, flavor:{sweet:15, fruity:5, sour:5, bitter:90, clean:30} } },
+  { id:"dover-spirits", name:"ドーバースピリッツ", short:"ドーバースピリッツ", category:"スピリッツ", price:null, abv:88, image:null, available:true, weight:1, recommend:false,
+    description:"度数88度のクセのない高純度スピリッツ" },
+  { id:"spirytus", name:"スピリタス", short:"スピリタス", category:"ウォッカ", price:null, abv:96, image:null, available:true, weight:1, recommend:false,
+    description:"度数96度、世界最高クラスの度数のポーランド産ウォッカ" },
   { id:"chamisul", name:"チャミスル", short:"チャミスル", category:"焼酎（韓国）", price:null, abv:null, image:null, available:true, weight:1,
-    description:"すっきり飲みやすい、韓国の定番焼酎", flavors:["clean", "sweet"], moods:["refresh", "party"] },
-  { id:"kleiner", name:"クライナー", short:"クライナー", category:"リキュール", price:null, abv:null, image:null, available:true, weight:1,
-    description:"小さなボトルで乾杯できる、甘くてフルーティーなリキュール", flavors:["sweet", "fruity"], moods:["party", "sweet"] },
+    description:"韓国で定番の焼酎。クセが少なくすっきりした飲み口で、ほんのり甘い",
+    match:{ mood:{party:70, sweet:25, refresh:85, new:45, adult:30}, flavor:{sweet:30, fruity:15, sour:10, bitter:5, clean:95} } },
+  { id:"kleiner", name:"クライナー", short:"クライナー", category:"リキュール", price:null, abv:20, image:null, available:true, weight:1,
+    description:"ドイツ生まれの小瓶リキュール。いちじくの甘くフルーティーな味わいで、ボトルごと乾杯できる",
+    match:{ mood:{party:95, sweet:90, refresh:30, new:40, adult:15}, flavor:{sweet:90, fruity:90, sour:15, bitter:5, clean:20} } },
   { id:"cocabomb", name:"コカボム", short:"コカボム", category:"ショットカクテル", price:null, abv:null, image:null, available:true, weight:1,
-    description:"コカレロをエナジードリンクと合わせた、甘くて飲みやすい一杯", flavors:["sweet", "clean"], moods:["party", "sweet"] },
-  { id:"suratto", name:"すらっと", short:"すらっと", category:"ショット", price:null, abv:null, image:null, available:true, weight:1,
-    description:null, flavors:[], moods:[] },
+    description:"ハーブリキュールのコカレロをエナジードリンクと合わせた、甘くて飲みやすい一杯",
+    match:{ mood:{party:100, sweet:80, refresh:45, new:55, adult:10}, flavor:{sweet:90, fruity:40, sour:15, bitter:10, clean:45} } },
+  { id:"suratto", name:"すらっと", short:"すらっと", category:"チューハイ（低アルコール）", price:null, abv:3, image:null, available:true, weight:1,
+    description:"アサヒの低アルコールチューハイ。果実のつぶつぶ感があり、軽くすっきり飲める",
+    match:{ mood:{party:40, sweet:55, refresh:90, new:30, adult:15}, flavor:{sweet:40, fruity:70, sour:50, bitter:5, clean:85} } },
 ];
 
 /* ===================================================================== */
@@ -851,22 +872,23 @@ const SHOT_STEPS=[
 ];
 
 function rankShots(mood, flavor){
-  return availableShots().filter(s=>s.recommend!==false).map(s=>{
-    let sc=rand()*0.9;
-    const mHit = mood!=="any" && Array.isArray(s.moods) && s.moods.includes(mood);
-    const fHit = flavor!=="any" && Array.isArray(s.flavors) && s.flavors.includes(flavor);
-    if(mood==="any") sc+=rand()*2; else if(mHit) sc+=3;
-    if(flavor==="any") sc+=rand()*2; else if(fHit) sc+=3;
-    return {s,sc,mHit,fHit};
+  return availableShots().filter(s=>s.recommend!==false && s.match && s.match.mood && s.match.flavor).map(s=>{
+    const mv = mood==="any" ? 55+rand()*30 : (s.match.mood[mood] ?? 0);
+    const fv = flavor==="any" ? 55+rand()*30 : (s.match.flavor[flavor] ?? 0);
+    const pct = Math.round(mv*0.5 + fv*0.5);
+    return {s, pct, sc: pct + rand()*3, mv, fv, mHit: mood!=="any" && mv>=60, fHit: flavor!=="any" && fv>=60};
   }).sort((a,b)=>b.sc-a.sc);
 }
 function shotReason(x, mood, flavor){
-  const desc = str(x.s.description,120) || "この店のショット";
-  const parts=[];
-  if(x.mHit) parts.push(`「${labelOf(SHOT_MOODS,mood)}」という今の気分にぴったりの一杯です。`);
-  if(x.fHit) parts.push(`${labelOf(FLAVORS,flavor)}が好きなあなたには、${desc}が合います。`);
-  if(!parts.length) parts.push(`今夜は少し冒険して、${desc}を試してみませんか。`);
-  return parts.join("");
+  const desc = str(x.s.description,160) || "この店のショット";
+  const ml = labelOf(SHOT_MOODS,mood), fl = labelOf(FLAVORS,flavor);
+  let lead;
+  if(x.mHit && x.fHit) lead = `「${ml}」「${fl}」と答えたあなたにぴったりです。`;
+  else if(x.mHit) lead = `「${ml}」と答えたあなたにぴったりです。`;
+  else if(x.fHit) lead = `味の好み「${fl}」にぴったりです。`;
+  else if(mood==="any" && flavor==="any") lead = "今夜のおまかせは、この一杯です。";
+  else lead = "条件にいちばん近い一杯です。";
+  return `${lead}${desc}。`;
 }
 let shotRank=[], shotIdx=0;
 async function startShot(){
@@ -874,7 +896,7 @@ async function startShot(){
   const {mood, flavor} = await chatFlow(chat, SHOT_STEPS);
   const list=availableShots();
   const [ai] = await Promise.all([
-    list.length ? askAI("shot",{mood,flavor,menu:list.filter(s=>s.recommend!==false).map(s=>({id:s.id,name:s.name,category:s.category,description:s.description,flavors:s.flavors}))}) : null,
+    list.length ? askAI("shot",{mood,flavor,menu:list.filter(s=>s.recommend!==false && s.match).map(s=>({id:s.id,name:s.name,category:s.category,description:s.description,match:s.match}))}) : null,
     botSay(chat,"ありがとうございます。メニューの中から選んでみますね…",1300)
   ]);
   shotRank=rankShots(mood,flavor).map(x=>({...x, reason:shotReason(x,mood,flavor)}));
@@ -887,11 +909,12 @@ async function startShot(){
   if(shotRank.length) await botSay(chat, `あなたにおすすめの一杯は…「${shotRank[0].s.name}」です。`, 700);
   setBusy(false); renderShot();
 }
-function shotCard(s, kicker, reason){
+function shotCard(s, kicker, reason, pct){
   const r=el("div","result");
   r.append(el("div","kicker",kicker));
   if(s.image){ const img=el("img"); img.src=s.image; img.alt=s.name; img.style.cssText="width:100%;border-radius:14px;margin-top:10px;aspect-ratio:4/3;object-fit:cover"; r.append(img); }
   r.append(el("h3",null,s.name));
+  if(typeof pct==="number"){ const m=el("div","match"); m.append(el("span",null,"あなたとの相性"), el("b",null,Math.min(99,pct)+"%")); const bar=el("i"); bar.style.setProperty("--w",Math.min(99,pct)+"%"); m.append(bar); r.append(m); }
   if(reason){ const dl=el("dl"); dl.append(el("dt",null,"おすすめの理由"), el("dd",null,reason)); r.append(dl); }
   const sp=el("div","specs");
   const specs=[["種類",s.category]];
@@ -909,7 +932,7 @@ function renderShot(){
     out.append(reset); return;
   }
   const x=shotRank[shotIdx%shotRank.length];
-  const card=shotCard(x.s, "あなたへのおすすめショット", x.reason);
+  const card=shotCard(x.s, "あなたへのおすすめショット", x.reason, x.pct);
   out.append(card);
   const acts=el("div","actions");
   if(shotRank.length>1){
